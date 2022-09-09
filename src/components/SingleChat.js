@@ -23,6 +23,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const [newMessage, setNewMessage] = useState("");
   const [socketConnected, setSocketConnected] = useState(false);
   const [typing, setTyping] = useState(false);
+  const [event, setEvent] = useState("none");
   const [istyping, setIsTyping] = useState(false);
   const toast = useToast();
 
@@ -36,17 +37,16 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   };
   const { selectedChat, setSelectedChat, user, notification, setNotification } =
     ChatState();
-  const fetchMessages = async () => {
+  const fetchMessages = async (load) => {
     if (!selectedChat) return;
-
     try {
-      setLoading(true);
-
+      load === "loading" && setLoading(true);
       const { data } = await axios.get(`/api/message/${selectedChat._id}`);
       setMessages(data);
-      setLoading(false);
+      load === "loading" && setLoading(false);
 
       socket.emit("join chat", selectedChat._id);
+      setEvent("Joined");
     } catch (error) {
       toast({
         title: "Error Occured!",
@@ -61,6 +61,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
   const sendMessage = async (event) => {
     if (event.key === "Enter" && newMessage) {
+      setEvent("sending");
       socket.emit("stop typing", selectedChat._id);
       try {
         const config = {
@@ -79,6 +80,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
           config
         );
         socket.emit("new message", data);
+        setEvent("sent");
         setMessages([...messages, data]);
       } catch (error) {
         toast({
@@ -96,22 +98,35 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   useEffect(() => {
     socket = io(ENDPOINT);
     socket.emit("setup", user);
-    socket.on("connected", () => setSocketConnected(true));
-    socket.on("typing", () => setIsTyping(true));
-    socket.on("stop typing", () => setIsTyping(false));
+    socket.on("connected", () => {
+      setSocketConnected(true);
+    });
+    socket.on("typing", () => {
+      setIsTyping(true);
+      setEvent("typing");
+    });
+    socket.on("stop typing", () => {
+      setIsTyping(false);
+      setEvent("stopTyping");
+    });
 
     // eslint-disable-next-line
   }, []);
-
   useEffect(() => {
-    fetchMessages();
+    fetchMessages("loading");
 
     selectedChatCompare = selectedChat;
     // eslint-disable-next-line
   }, [selectedChat]);
+  useEffect(() => {
+    fetchMessages("noLoading");
+    selectedChatCompare = selectedChat;
+    // eslint-disable-next-line
+  }, [event]);
 
   useEffect(() => {
     socket.on("message recieved", (newMessageRecieved) => {
+      setEvent("recieved");
       if (
         !selectedChatCompare || // if chat is not selected or doesn't match current chat
         selectedChatCompare._id !== newMessageRecieved.chat._id
@@ -124,7 +139,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
         setMessages([...messages, newMessageRecieved]);
       }
     });
-  });
+  }, [event]);
 
   const typingHandler = (e) => {
     setNewMessage(e.target.value);
@@ -163,6 +178,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
           >
             <IconButton
               d={{ base: "flex", md: "none" }}
+              sx={{ marginRight: 3 }}
               icon={<ArrowBackIcon />}
               onClick={() => setSelectedChat("")}
             />
@@ -187,7 +203,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
             w="100%"
             h="100%"
             borderRadius="lg"
-            overflowY="hidden"
+            overflowY="scroll"
           >
             {loading ? (
               <Spinner
@@ -206,7 +222,9 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
             <FormControl
               onKeyDown={sendMessage}
               id="first-name"
+              sx={{ position: "absolute", bottom: 2 }}
               isRequired
+              w="60%"
               mt={3}
             >
               {istyping ? (
@@ -223,6 +241,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
               )}
               <Input
                 variant="filled"
+                className="text-box"
                 bg="#E0E0E0"
                 placeholder="Enter a message.."
                 value={newMessage}

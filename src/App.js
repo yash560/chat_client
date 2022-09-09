@@ -8,7 +8,7 @@ function App() {
   axios.defaults.baseURL = "http://localhost:2000/";
 
   return (
-    <div className="App">
+    <div className="bg-black flex">
       <Route path="/" component={Homepage} exact />
       <Route path="/chats" component={Chatpage} />
     </div>

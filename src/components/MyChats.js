@@ -17,7 +17,6 @@ const MyChats = ({ fetchAgain }) => {
   const toast = useToast();
 
   const fetchChats = async () => {
-    console.log(user.email);
     try {
       const config = {
         headers: {
@@ -70,15 +69,6 @@ const MyChats = ({ fetchAgain }) => {
         alignItems="center"
       >
         My Chats
-        <SingleChatModal>
-          <Button
-            d="flex"
-            fontSize={{ base: "17px", md: "10px", lg: "17px" }}
-            rightIcon={<AddIcon />}
-          >
-            New Chat
-          </Button>
-        </SingleChatModal>
       </Box>
       <Box
         d="flex"
@@ -90,6 +80,17 @@ const MyChats = ({ fetchAgain }) => {
         borderRadius="lg"
         overflowY="hidden"
       >
+        <SingleChatModal>
+          <Button
+            sx={{ marginBottom: 5 }}
+            d="flex"
+            className="newChatButton"
+            fontSize={{ base: "17px", md: "10px", lg: "17px" }}
+            rightIcon={<AddIcon />}
+          >
+            New Chat
+          </Button>
+        </SingleChatModal>
         {chats ? (
           <Stack overflowY="scroll">
             {chats.map((chat) => (
